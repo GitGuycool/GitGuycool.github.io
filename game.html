@@ -74,6 +74,31 @@
       transform: scale(1.05);
     }
     
+    /* Grid Size Input */
+    .grid-input-container {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin: 20px;
+      font-size: 20px;
+    }
+    
+    .grid-input {
+      width: 80px;
+      padding: 10px;
+      font-size: 20px;
+      border: 2px solid white;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.3);
+      color: white;
+      text-align: center;
+      font-weight: bold;
+    }
+    
+    .grid-input::placeholder {
+      color: rgba(255,255,255,0.6);
+    }
+    
     /* Rock Paper Scissors Styles */
     .score-board {
       display: flex;
@@ -169,6 +194,80 @@
       transform: scale(1.05);
     }
     
+    /* Dots and Boxes Styles */
+    .dots-container {
+      display: inline-block;
+      padding: 20px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
+    }
+    
+    .dot {
+      width: 8px;
+      height: 8px;
+      background: white;
+      border-radius: 50%;
+      position: absolute;
+      transform: translate(-50%, -50%);
+    }
+    
+    .line {
+      position: absolute;
+      background: white;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .line.horizontal {
+      height: 4px;
+      width: 40px;
+    }
+    
+    .line.vertical {
+      width: 4px;
+      height: 40px;
+    }
+    
+    .line:hover {
+      background: #4ade80;
+      transform: scale(1.1);
+    }
+    
+    .line.claimed {
+      cursor: default;
+    }
+    
+    .line.claimed.player1 {
+      background: #60a5fa;
+    }
+    
+    .line.claimed.player2 {
+      background: #f87171;
+    }
+    
+    .box {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 24px;
+      font-weight: bold;
+      border-radius: 5px;
+    }
+    
+    .box.player1 {
+      background: rgba(96, 165, 250, 0.5);
+      color: #60a5fa;
+    }
+    
+    .box.player2 {
+      background: rgba(248, 113, 113, 0.5);
+      color: #f87171;
+    }
+    
     button {
       padding: 15px 40px;
       background: rgba(255,255,255,0.3);
@@ -204,6 +303,19 @@
       color: rgba(255,255,255,0.7);
     }
     
+    input {
+      padding: 10px;
+      border-radius: 10px;
+      border: 2px solid white;
+      background: rgba(255,255,255,0.3);
+      color: white;
+      font-size: 16px;
+    }
+    
+    input::placeholder {
+      color: rgba(255,255,255,0.7);
+    }
+    
     .hidden {
       display: none;
     }
@@ -224,6 +336,9 @@
       <button class="game-option" onclick="startGame('ttt')">
         ⭕❌<br>Tic Tac Toe
       </button>
+      <button class="game-option" onclick="showDotsSetup()">
+        ⚫🟦<br>Dots and Boxes
+      </button>
     </div>
   </div>
 
@@ -239,6 +354,22 @@
         👥 vs Friend
       </button>
     </div>
+    <button onclick="backToMenu()">Back to Menu</button>
+  </div>
+
+  <!-- Dots and Boxes Setup -->
+  <div id="dotsSetupScreen" class="hidden">
+    <h1>⚫🟦 Dots and Boxes</h1>
+    <p style="font-size: 20px;">Choose Grid Size:</p>
+    
+    <div class="grid-input-container">
+      <input type="number" id="gridWidth" class="grid-input" placeholder="Width" value="5" min="2" max="10">
+      <span>×</span>
+      <input type="number" id="gridHeight" class="grid-input" placeholder="Height" value="5" min="2" max="10">
+      <span>dots</span>
+    </div>
+    
+    <button class="mode-btn" onclick="startDotsGame()">Start Game</button>
     <button onclick="backToMenu()">Back to Menu</button>
   </div>
 
@@ -321,11 +452,38 @@
     <textarea id="gameStateInput" placeholder="Paste game state here"></textarea>
   </div>
 
+  <!-- Dots and Boxes Game -->
+  <div id="dotsGame" class="hidden">
+    <h1>⚫ Dots and Boxes 🟦</h1>
+    <p>Current Player: <span id="dotsCurrentPlayer" style="color: #60a5fa;">Player 1</span></p>
+    
+    <div class="score-board">
+      <div class="score" style="color: #60a5fa;">Player 1: <span id="dotsPlayer1Score">0</span></div>
+      <div class="score" style="color: #f87171;">Player 2: <span id="dotsPlayer2Score">0</span></div>
+    </div>
+    
+    <div class="dots-container" id="dotsContainer"></div>
+    
+    <div>
+      <button onclick="copyDotsState()">Copy Game State</button>
+      <button onclick="loadDotsState()">Load Game State</button>
+      <button onclick="resetDots()">New Game</button>
+      <button onclick="backToMenu()">Back to Menu</button>
+    </div>
+    
+    <textarea id="dotsStateInput" placeholder="Paste game state here"></textarea>
+  </div>
+
   <script>
     // Menu functions
     function selectRPSMode() {
       document.getElementById('menuScreen').classList.add('hidden');
       document.getElementById('rpsModeScreen').classList.remove('hidden');
+    }
+    
+    function showDotsSetup() {
+      document.getElementById('menuScreen').classList.add('hidden');
+      document.getElementById('dotsSetupScreen').classList.remove('hidden');
     }
     
     function startGame(game) {
@@ -345,12 +503,31 @@
       }
     }
     
+    function startDotsGame() {
+      const width = parseInt(document.getElementById('gridWidth').value) || 5;
+      const height = parseInt(document.getElementById('gridHeight').value) || 5;
+      
+      if (width < 2 || width > 10 || height < 2 || height > 10) {
+        alert('Grid size must be between 2 and 10!');
+        return;
+      }
+      
+      dotsGridWidth = width;
+      dotsGridHeight = height;
+      
+      document.getElementById('dotsSetupScreen').classList.add('hidden');
+      document.getElementById('dotsGame').classList.remove('hidden');
+      initDotsGame();
+    }
+    
     function backToMenu() {
       document.getElementById('menuScreen').classList.remove('hidden');
       document.getElementById('rpsModeScreen').classList.add('hidden');
+      document.getElementById('dotsSetupScreen').classList.add('hidden');
       document.getElementById('rpsComputerGame').classList.add('hidden');
       document.getElementById('rpsFriendGame').classList.add('hidden');
       document.getElementById('tttGame').classList.add('hidden');
+      document.getElementById('dotsGame').classList.add('hidden');
     }
     
     function backToRPSMode() {
@@ -433,7 +610,6 @@
         player2Move = choice;
         document.getElementById('player2Choice').textContent = '✅';
         
-        // Show both choices after a brief delay
         setTimeout(() => {
           document.getElementById('player1Choice').textContent = player1Move;
           document.getElementById('player2Choice').textContent = player2Move;
@@ -457,7 +633,6 @@
           document.getElementById('player1Score').textContent = player1Score;
           document.getElementById('player2Score').textContent = player2Score;
           
-          // Reset for next round
           setTimeout(() => {
             document.getElementById('player1Choice').textContent = '?';
             document.getElementById('player2Choice').textContent = '?';
@@ -602,6 +777,248 @@
       currentPlayer = 'X';
       document.getElementById('currentPlayer').textContent = currentPlayer;
       createBoard();
+    }
+
+    // ==================== DOTS AND BOXES ====================
+    let dotsGridWidth = 5;
+    let dotsGridHeight = 5;
+    let dotsCurrentPlayer = 1;
+    let dotsPlayer1ScoreVal = 0;
+    let dotsPlayer2ScoreVal = 0;
+    let horizontalLines = [];
+    let verticalLines = [];
+    let boxes = [];
+    
+    function initDotsGame() {
+      dotsCurrentPlayer = 1;
+      dotsPlayer1ScoreVal = 0;
+      dotsPlayer2ScoreVal = 0;
+      
+      // Initialize line states
+      horizontalLines = [];
+      verticalLines = [];
+      boxes = [];
+      
+      for (let y = 0; y < dotsGridHeight; y++) {
+        horizontalLines[y] = [];
+        for (let x = 0; x < dotsGridWidth - 1; x++) {
+          horizontalLines[y][x] = 0; // 0 = unclaimed, 1 = player1, 2 = player2
+        }
+      }
+      
+      for (let y = 0; y < dotsGridHeight - 1; y++) {
+        verticalLines[y] = [];
+        for (let x = 0; x < dotsGridWidth; x++) {
+          verticalLines[y][x] = 0;
+        }
+      }
+      
+      for (let y = 0; y < dotsGridHeight - 1; y++) {
+        boxes[y] = [];
+        for (let x = 0; x < dotsGridWidth - 1; x++) {
+          boxes[y][x] = 0; // 0 = unclaimed, 1 = player1, 2 = player2
+        }
+      }
+      
+      renderDotsGame();
+      updateDotsUI();
+    }
+    
+    function renderDotsGame() {
+      const container = document.getElementById('dotsContainer');
+      container.innerHTML = '';
+      container.style.position = 'relative';
+      
+      const spacing = 50;
+      const width = (dotsGridWidth - 1) * spacing + 20;
+      const height = (dotsGridHeight - 1) * spacing + 20;
+      
+      container.style.width = width + 'px';
+      container.style.height = height + 'px';
+      
+      // Draw dots
+      for (let y = 0; y < dotsGridHeight; y++) {
+        for (let x = 0; x < dotsGridWidth; x++) {
+          const dot = document.createElement('div');
+          dot.className = 'dot';
+          dot.style.left = (x * spacing + 10) + 'px';
+          dot.style.top = (y * spacing + 10) + 'px';
+          container.appendChild(dot);
+        }
+      }
+      
+      // Draw horizontal lines
+      for (let y = 0; y < dotsGridHeight; y++) {
+        for (let x = 0; x < dotsGridWidth - 1; x++) {
+          const line = document.createElement('div');
+          line.className = 'line horizontal';
+          line.style.left = (x * spacing + 10) + 'px';
+          line.style.top = (y * spacing + 8) + 'px';
+          
+          if (horizontalLines[y][x] > 0) {
+            line.classList.add('claimed');
+            line.classList.add(horizontalLines[y][x] === 1 ? 'player1' : 'player2');
+          } else {
+            line.onclick = () => claimLine('h', x, y);
+          }
+          
+          container.appendChild(line);
+        }
+      }
+      
+      // Draw vertical lines
+      for (let y = 0; y < dotsGridHeight - 1; y++) {
+        for (let x = 0; x < dotsGridWidth; x++) {
+          const line = document.createElement('div');
+          line.className = 'line vertical';
+          line.style.left = (x * spacing + 8) + 'px';
+          line.style.top = (y * spacing + 10) + 'px';
+          
+          if (verticalLines[y][x] > 0) {
+            line.classList.add('claimed');
+            line.classList.add(verticalLines[y][x] === 1 ? 'player1' : 'player2');
+          } else {
+            line.onclick = () => claimLine('v', x, y);
+          }
+          
+          container.appendChild(line);
+        }
+      }
+      
+      // Draw boxes
+      for (let y = 0; y < dotsGridHeight - 1; y++) {
+        for (let x = 0; x < dotsGridWidth - 1; x++) {
+          if (boxes[y][x] > 0) {
+            const box = document.createElement('div');
+            box.className = 'box';
+            box.classList.add(boxes[y][x] === 1 ? 'player1' : 'player2');
+            box.style.left = (x * spacing + 10) + 'px';
+            box.style.top = (y * spacing + 10) + 'px';
+            box.textContent = boxes[y][x] === 1 ? '1' : '2';
+            container.appendChild(box);
+          }
+        }
+      }
+    }
+    
+    function claimLine(type, x, y) {
+      let completedBox = false;
+      
+      if (type === 'h') {
+        horizontalLines[y][x] = dotsCurrentPlayer;
+        
+        // Check if this completes any boxes
+        if (y > 0 && checkBox(x, y - 1)) {
+          boxes[y - 1][x] = dotsCurrentPlayer;
+          completedBox = true;
+        }
+        if (y < dotsGridHeight - 1 && checkBox(x, y)) {
+          boxes[y][x] = dotsCurrentPlayer;
+          completedBox = true;
+        }
+      } else {
+        verticalLines[y][x] = dotsCurrentPlayer;
+        
+        // Check if this completes any boxes
+        if (x > 0 && checkBox(x - 1, y)) {
+          boxes[y][x - 1] = dotsCurrentPlayer;
+          completedBox = true;
+        }
+        if (x < dotsGridWidth - 1 && checkBox(x, y)) {
+          boxes[y][x] = dotsCurrentPlayer;
+          completedBox = true;
+        }
+      }
+      
+      renderDotsGame();
+      
+      if (completedBox) {
+        // Player gets another turn
+        if (dotsCurrentPlayer === 1) {
+          dotsPlayer1ScoreVal++;
+        } else {
+          dotsPlayer2ScoreVal++;
+        }
+        updateDotsUI();
+        
+        // Check if game is over
+        if (checkDotsGameOver()) {
+          setTimeout(() => {
+            if (dotsPlayer1ScoreVal > dotsPlayer2ScoreVal) {
+              alert('🎉 Player 1 Wins! 🎉');
+            } else if (dotsPlayer2ScoreVal > dotsPlayer1ScoreVal) {
+              alert('🎉 Player 2 Wins! 🎉');
+            } else {
+              alert('🤝 It\'s a Tie! 🤝');
+            }
+          }, 100);
+        }
+      } else {
+        // Switch player
+        dotsCurrentPlayer = dotsCurrentPlayer === 1 ? 2 : 1;
+        updateDotsUI();
+      }
+    }
+    
+    function checkBox(x, y) {
+      return horizontalLines[y][x] > 0 && 
+             horizontalLines[y + 1][x] > 0 && 
+             verticalLines[y][x] > 0 && 
+             verticalLines[y][x + 1] > 0;
+    }
+    
+    function checkDotsGameOver() {
+      const totalBoxes = (dotsGridWidth - 1) * (dotsGridHeight - 1);
+      return (dotsPlayer1ScoreVal + dotsPlayer2ScoreVal) === totalBoxes;
+    }
+    
+    function updateDotsUI() {
+      const playerEl = document.getElementById('dotsCurrentPlayer');
+      playerEl.textContent = `Player ${dotsCurrentPlayer}`;
+      playerEl.style.color = dotsCurrentPlayer === 1 ? '#60a5fa' : '#f87171';
+      
+      document.getElementById('dotsPlayer1Score').textContent = dotsPlayer1ScoreVal;
+      document.getElementById('dotsPlayer2Score').textContent = dotsPlayer2ScoreVal;
+    }
+    
+    function copyDotsState() {
+      const state = JSON.stringify({
+        width: dotsGridWidth,
+        height: dotsGridHeight,
+        currentPlayer: dotsCurrentPlayer,
+        player1Score: dotsPlayer1ScoreVal,
+        player2Score: dotsPlayer2ScoreVal,
+        horizontal: horizontalLines,
+        vertical: verticalLines,
+        boxes: boxes
+      });
+      navigator.clipboard.writeText(state);
+      alert('Game state copied! Send it to your friend.');
+    }
+    
+    function loadDotsState() {
+      const input = document.getElementById('dotsStateInput').value;
+      try {
+        const state = JSON.parse(input);
+        dotsGridWidth = state.width;
+        dotsGridHeight = state.height;
+        dotsCurrentPlayer = state.currentPlayer;
+        dotsPlayer1ScoreVal = state.player1Score;
+        dotsPlayer2ScoreVal = state.player2Score;
+        horizontalLines = state.horizontal;
+        verticalLines = state.vertical;
+        boxes = state.boxes;
+        
+        renderDotsGame();
+        updateDotsUI();
+        alert('Game state loaded!');
+      } catch (e) {
+        alert('Invalid game state!');
+      }
+    }
+    
+    function resetDots() {
+      initDotsGame();
     }
   </script>
 </body>
